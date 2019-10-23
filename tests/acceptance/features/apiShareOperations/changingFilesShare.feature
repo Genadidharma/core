@@ -130,3 +130,57 @@ Feature: sharing
       | public-webdav-api-version |
       | old                       |
       | new                       |
+
+  @public_link_share-feature-required
+  Scenario Outline: Public can or can-not delete file through publicly shared link with password
+    Given the administrator has enabled DAV tech_preview
+    And user "user0" has moved file "welcome.txt" to "PARENT/welcome.txt"
+    And user "user0" has created a public link share with settings
+      | path        | /PARENT   |
+      | permissions | change    |
+      | password    | newpasswd |
+    When the public deletes file "welcome.txt" from the last public share using the password "<password>" and <public-webdav-api-version> public WebDAV API
+    Then the HTTP status code should be "<http-status-code>"
+    And as "user0" file "PARENT/welcome.txt" <should-or-not> exist
+    Examples:
+      | public-webdav-api-version | http-status-code | should-or-not | password  |
+      | old                       | 401              | should        | invalid   |
+      | new                       | 401              | should        | invalid   |
+      | old                       | 204              | should not    | newpasswd |
+      | new                       | 204              | should not    | newpasswd |
+
+  @public_link_share-feature-required
+  Scenario Outline: Public link share permissions work correctly for renaming password protected share
+    Given the administrator has enabled DAV tech_preview
+    And user "user0" has created a public link share with settings
+      | path        | /PARENT   |
+      | permissions | change    |
+      | password    | newpasswd |
+    When the public renames file "parent.txt" to "newparent.txt" from the last public share using the password "<password>" and <public-webdav-api-version> public WebDAV API
+    Then the HTTP status code should be "<http-status-code>"
+    And as "user0" file "/PARENT/newparent.txt" <should-or-not> exist
+    And as "user0" file "/PARENT/parent.txt" <not-or-should> exist
+    Examples:
+      | public-webdav-api-version | http-status-code | should-or-not | not-or-should | password  |
+      | old                       | 401              | should not    | should        | invalid   |
+      | new                       | 401              | should not    | should        | invalid   |
+      | old                       | 201              | should        | should not    | newpasswd |
+      | new                       | 201              | should        | should not    | newpasswd |
+
+  @public_link_share-feature-required
+  Scenario Outline: Public link share permissions work correctly for upload for password protected share
+    Given the administrator has enabled DAV tech_preview
+    And user "user0" has moved file "welcome.txt" to "PARENT/welcome.txt"
+    And user "user0" has created a public link share with settings
+      | path        | /PARENT   |
+      | permissions | change    |
+      | password    | newpasswd |
+    When the public uploads file "lorem.txt" with password "<password>" and content "test" using the <public-webdav-api-version> public WebDAV API
+    Then the HTTP status code should be "<http-status-code>"
+    And as "user0" file "/PARENT/lorem.txt" <should-or-not> exist
+    Examples:
+      | public-webdav-api-version | http-status-code | should-or-not | password  |
+      | old                       | 401              | should not    | invalid   |
+      | new                       | 401              | should not    | invalid   |
+      | old                       | 201              | should        | newpasswd |
+      | new                       | 201              | should        | newpasswd |
